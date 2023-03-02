@@ -14,6 +14,7 @@ const DASHBOARD = {
       convertFromDefinition(TEMPLATE_VARIABLE_PRESET, k1, v1)
     ),
   url: (v) => assignmentString("url", v),
+  reflow_type: (v) => assignmentString("reflow_type", v),
 };
 
 const WIDGET = {
@@ -25,6 +26,13 @@ const WIDGET = {
 const TEMPLATE_VARIABLE_PRESET = {
   name: (v) => assignmentString("name", v),
   template_variables: (v) => blockList(v, "template_variable", assignmentString),
+};
+
+const QUERY_DATA_SOURCE_TYPES = {
+  metrics: "metric_query",
+  events: "event_query",
+  process: "process_query",
+  logs: "log_query",
 };
 
 const WIDGET_DEFINTION = {
@@ -71,10 +79,8 @@ const WIDGET_DEFINTION = {
   message_display: (v) => assignmentString("message_display", v),
   show_date_column: (v) => assignmentString("show_date_column", v),
   show_message_column: (v) => assignmentString("show_message_column", v),
-  show_message_column: (v) => assignmentString("show_message_column", v),
   sort: (v) => convertSort(v),
   color_preference: (v) => assignmentString("color_preference", v),
-  display_format: (v) => assignmentString("display_format", v),
   hide_zero_counts: (v) => assignmentString("hide_zero_counts", v),
   show_last_triggered: (v) => assignmentString("show_last_triggered", v),
   summary_type: (v) => assignmentString("summary_type", v),
@@ -95,7 +101,6 @@ const WIDGET_DEFINTION = {
   filters: (v) => assignmentString("filters", v),
   service: (v) => assignmentString("service", v),
   event: (v) => block("event", v, assignmentString),
-  legend_size: (v) => assignmentString("legend_size", v),
   markers: (v) => blockList(v, "marker", assignmentString),
   right_yaxis: (v) => block("right_yaxis", v, assignmentString),
   env: (v) => assignmentString("env", v),
@@ -117,6 +122,9 @@ const WIDGET_DEFINTION = {
   vertical_align: (_) => "", // 2.23.0 not described in docs, occurs in widget.note_definition json
   has_padding: (_) => "", // 2.23.0 not described in docs, occurs in widget.note_definition json
   logset: (_) => "", // 2.23.0 deprecated, see docs for widget.log_stream_definition
+  show_title: (v) => assignmentString("show_title", v),
+  show_priority: (v) => assignmentString("show_priority", v),
+  events: (v) => convertEvents(v),
 };
 
 const REQUEST = {
@@ -127,6 +135,11 @@ const REQUEST = {
   increase_good: (v) => assignmentString("increase_good", v),
   log_query: (v) =>
     block("log_query", v, (k1, v1) => convertFromDefinition(LOG_QUERY, k1, v1)),
+  queries: (v) => convertQueries(v),
+  // return block("query", v, (k1, v1) => {
+  //   return block("metric_query", v1, (k2, v2) => convertFromDefinition(QUERY, k2, v2))
+  // })
+  // },
   order_by: (v) => assignmentString("order_by", v),
   order_dir: (v) => assignmentString("order_dir", v),
   process_query: (v) => assignmentString("process_query", v),
@@ -146,6 +159,9 @@ const REQUEST = {
   limit: (v) => assignmentString("limit", v),
   order: (v) => assignmentString("order", v),
   fill: (v) => block("fill", v, assignmentString),
+  size: (v) => block("size", v, assignmentString),
+  formulas: (v) => blockList(v, "formula", assignmentString),
+  response_format: (v) => assignmentString("response_format", v),
 };
 
 const LOG_QUERY = {
@@ -156,6 +172,18 @@ const LOG_QUERY = {
   multi_compute: (v) => blockList(v, "multi_compute", assignmentString),
   search: (v) => assignmentString("search_query", v.query),
   search_query: (v) => assignmentString("search_query", v),
+};
+
+const QUERY = {
+  name: (v) => assignmentString("name", v),
+  query: (v) => assignmentString("query", v),
+  aggregator: (v) => assignmentString("aggregator", v),
+  data_source: (v) => assignmentString("data_source", v),
+};
+
+const EVENT = {
+  q: (v) => assignmentString("q", v),
+  tags_execution: (v) => assignmentString("tags_execution", v),
 };
 
 const GROUP_BY = {
@@ -180,6 +208,22 @@ function convertRequests(value) {
     return blockList(value, "request", (k, v) => convertFromDefinition(REQUEST, k, v));
   }
   return block("request", value, (k, v) => convertFromDefinition(REQUEST, k, v));
+}
+
+function convertQueries(value) {
+  return block("query", value, (k1, v1) => {
+    return block(QUERY_DATA_SOURCE_TYPES[v1.data_source], v1, (k2, v2) =>
+      convertFromDefinition(QUERY, k2, v2)
+    );
+  });
+}
+
+function convertEvents(value) {
+  return block("event", value, (k1, v1) => {
+    return block(QUERY_DATA_SOURCE_TYPES[v1.data_source], v1, (k2, v2) =>
+      convertFromDefinition(EVENT, k2, v2)
+    );
+  });
 }
 
 function widgetDefintion(contents) {
